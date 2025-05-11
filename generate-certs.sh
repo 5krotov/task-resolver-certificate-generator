@@ -23,6 +23,7 @@ echo "Processing services: ${SERVICES[*]}"
 openssl genrsa -out "$OUTPUT_DIR/root/root-ca.key" 4096
 openssl req -new -x509 -days 3650 -key "$OUTPUT_DIR/root/root-ca.key" \
     -out "$OUTPUT_DIR/root/root-ca.crt" -config "$CONFIG_PATH/root/root-ca.conf"
+openssl x509 -in "$OUTPUT_DIR/root/root-ca.crt" -out "$OUTPUT_DIR/root/root-ca.pem" -outform PEM
 
 # Generate Intermediate CA
 openssl genrsa -out "$OUTPUT_DIR/internal/internal-ca.key" 4096
@@ -31,6 +32,7 @@ openssl req -new -key "$OUTPUT_DIR/internal/internal-ca.key" \
 openssl x509 -req -days 1825 -in "$OUTPUT_DIR/internal/internal-ca.csr" \
     -CA "$OUTPUT_DIR/root/root-ca.crt" -CAkey "$OUTPUT_DIR/root/root-ca.key" -CAcreateserial \
     -out "$OUTPUT_DIR/internal/internal-ca.crt" -extfile "$CONFIG_PATH/internal/internal-ca.conf" -extensions v3_ca
+openssl x509 -in "$OUTPUT_DIR/internal/internal-ca.crt" -out "$OUTPUT_DIR/internal/internal-ca.pem" -outform PEM
 
 # Generate Services CA
 for SERVICE in "${SERVICES[@]}"; do
@@ -58,18 +60,22 @@ for SERVICE in "${SERVICES[@]}"; do
       -CA "$OUTPUT_DIR/internal/internal-ca.crt" -CAkey "$OUTPUT_DIR/internal/internal-ca.key" -CAcreateserial \
       -out "$OUTPUT_DIR/$SERVICE/$SERVICE.crt" -extfile "$SERVICE_CONF" -extensions v3_req
 
+  openssl x509 -in "$OUTPUT_DIR/$SERVICE/$SERVICE.crt" -out "$OUTPUT_DIR/$SERVICE/$SERVICE.pem" -outform PEM
+  openssl rsa -in "$OUTPUT_DIR/$SERVICE/$SERVICE.key" -out "$OUTPUT_DIR/$SERVICE/$SERVICE-key.pem" -outform PEM
+
   # Create certificate chain (service cert + Intermediate CA)
   cat "$OUTPUT_DIR/$SERVICE/$SERVICE.crt" "$OUTPUT_DIR/internal/internal-ca.crt" > "$OUTPUT_DIR/$SERVICE/$SERVICE-chain.crt"
+  cat "$OUTPUT_DIR/$SERVICE/$SERVICE.pem" "$OUTPUT_DIR/internal/internal-ca.pem" > "$OUTPUT_DIR/$SERVICE/$SERVICE-chain.pem"
 done
 
 # Set proper file permissions
-chmod 600 "$OUTPUT_DIR"/**/*.key
-chmod 644 "$OUTPUT_DIR"/**/*.{crt,csr}
+chmod 777 "$OUTPUT_DIR"/**/*.key
+chmod 777 "$OUTPUT_DIR"/**/*.{crt,csr,pem}
 
 echo "Certificate generation complete!"
-echo "Root CA:       $OUTPUT_DIR/root/root-ca.{key,crt}"
-echo "Intermediate CA:   $OUTPUT_DIR/internal/internal-ca.{key,crt}"
+echo "Root CA:       $OUTPUT_DIR/root/root-ca.{key,crt,pem}"
+echo "Intermediate CA:   $OUTPUT_DIR/internal/internal-ca.{key,crt,pem}"
 echo "Service files:"
-echo "  Private key: $OUTPUT_DIR/<service-name>/<service-name>.key"
-echo "  Certificate: $OUTPUT_DIR/<service-name>/<service-name>.crt"
-echo "  Chain file:  $OUTPUT_DIR/<service-name>/<service-name>-chain.crt"
+echo "  Private key: $OUTPUT_DIR/<service-name>/<service-name>.{key,pem}"
+echo "  Certificate: $OUTPUT_DIR/<service-name>/<service-name>.{crt,pem}"
+echo "  Chain file:  $OUTPUT_DIR/<service-name>/<service-name>-chain.{crt,pem}"
