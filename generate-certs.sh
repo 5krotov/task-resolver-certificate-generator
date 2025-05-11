@@ -12,9 +12,8 @@ OUTPUT_DIR="$2"
 shift 2
 SERVICES=("$@")
 
-mkdir -p "$OUTPUT_DIR"
-mkdir -p "$OUTPUT_DIR/root/"
-mkdir -p "$OUTPUT_DIR/internal/"
+mkdir "$OUTPUT_DIR/root/"
+mkdir "$OUTPUT_DIR/internal/"
 
 echo "Loading configurations from: $CONFIG_PATH"
 echo "Saving certificates to: $OUTPUT_DIR"
@@ -64,15 +63,13 @@ for SERVICE in "${SERVICES[@]}"; do
 done
 
 # Set proper file permissions
-chmod 600 "$OUTPUT_DIR"/*.key
-chmod 644 "$OUTPUT_DIR"/*.{crt,csr}
+chmod 600 "$OUTPUT_DIR"/**/*.key
+chmod 644 "$OUTPUT_DIR"/**/*.{crt,csr}
 
 echo "Certificate generation complete!"
 echo "Root CA:       $OUTPUT_DIR/root/root-ca.{key,crt}"
 echo "Intermediate CA:   $OUTPUT_DIR/internal/internal-ca.{key,crt}"
 echo "Service files:"
 echo "  Private key: $OUTPUT_DIR/<service-name>/<service-name>.key"
-echo "  Certificate: $OUTPUT_DIR/<service-name>.crt"
-echo "  Chain file:  $OUTPUT_DIR/<service-name>-chain.crt"
-
-done
+echo "  Certificate: $OUTPUT_DIR/<service-name>/<service-name>.crt"
+echo "  Chain file:  $OUTPUT_DIR/<service-name>/<service-name>-chain.crt"
