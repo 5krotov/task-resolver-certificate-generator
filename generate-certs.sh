@@ -12,6 +12,8 @@ OUTPUT_DIR="$2"
 shift 2
 SERVICES=("$@")
 
+find "$OUTPUT_DIR/" -mindepth 1 -delete
+
 mkdir "$OUTPUT_DIR/root/"
 mkdir "$OUTPUT_DIR/internal/"
 
